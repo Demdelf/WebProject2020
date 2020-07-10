@@ -1,25 +1,16 @@
 package util;
 
-import dao.UserDao;
-import model.User;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PostgreSQLJDBC {
-
+    private static final Logger logger = LoggerFactory.getLogger(PostgreSQLJDBC.class);
     private static String url = "jdbc:postgresql://localhost:5432/epamTrainingWeb";
     private static Connection connection = null;
-    public static void closeConnection(){
-        try {
-            connection.close();
-            System.out.println("Connection to db was closed.");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
     public static Connection getConnection() {
         if (connection != null)
@@ -30,17 +21,18 @@ public class PostgreSQLJDBC {
                 connection = DriverManager
                         .getConnection(url,
                                 "postgres", "qwerty");
-                System.out.println("Opened database successfully");
+                logger.info("Connected to db successfully");
             } catch (SQLException | ClassNotFoundException e) {
                 e.printStackTrace();
                 System.err.println(e.getClass().getName()+": "+e.getMessage());
+                logger.error("Can't connect to db");
+                throw new IllegalStateException();
             }
             return connection;
         }
     }
 
     public static void createNewUserTable() {
-        // SQL statement for creating a new table
         String sql = "CREATE TABLE IF not EXISTS USERS (" +
                 "id SERIAL PRIMARY KEY," +
                 "name TEXT," +
@@ -51,27 +43,10 @@ public class PostgreSQLJDBC {
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
             stmt.close();
-            System.out.println("User table created");
+            logger.debug("User table used or created successfully");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
-        }
-    }
-
-    public static void createNewTaskTable() {
-        String sql = "CREATE TABLE IF not EXISTS TASKS (" +
-                "id SERIAL PRIMARY KEY," +
-                "text TEXT," +
-                "description TEXT," +
-                "deadline TEXT," +
-                "status TEXT)";
-        try  {
-            Connection conn = getConnection();
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate(sql);
-            stmt.close();
-            System.out.println("Tasks table created");
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            logger.warn("Can't used or create User table");
         }
     }
 
@@ -89,9 +64,10 @@ public class PostgreSQLJDBC {
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
             stmt.close();
-            System.out.println("USERSTASKS Table created");
+            logger.debug("USERSTASKS table used or created successfully");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
+            logger.warn("Can't used or create USERSTASKS table");
         }
     }
 
@@ -106,23 +82,10 @@ public class PostgreSQLJDBC {
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
             stmt.close();
-            System.out.println("USERSGOALS Table created");
+            logger.debug("USERSGOALS table used or created successfully");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
-        }
-    }
-
-    public static void closeQuietly(Connection conn) {
-        try {
-            conn.close();
-        } catch (Exception e) {
-        }
-    }
-
-    public static void rollbackQuietly(Connection conn) {
-        try {
-            conn.rollback();
-        } catch (Exception e) {
+            logger.warn("Can't used or create USERSGOALS table");
         }
     }
 }

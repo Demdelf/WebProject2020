@@ -1,21 +1,22 @@
 package dao;
 
 import model.Goal;
-import model.Status;
-import model.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.PostgreSQLJDBC;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GoalsDao {
     private Connection connection;
     private final String tableName = "USERSGOALS";
+    private static final Logger logger = LoggerFactory.getLogger(
+            GoalsDao.class);
 
     public GoalsDao() {
         connection = PostgreSQLJDBC.getConnection();
@@ -26,15 +27,13 @@ public class GoalsDao {
         try {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("INSERT INTO " + tableName + "(user_id, text, parentgoal) VALUES (?, ?, ?)");
-            // Parameters start with 1
             preparedStatement.setInt(1, user_id);
             preparedStatement.setString(2, goal.getText());
             preparedStatement.setInt(3, goal.getParentGoal());
-
             preparedStatement.executeUpdate();
-            System.out.println("Goal has been added");
+            logger.trace("Goal {} has been added", goal.toString());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Goal: {} can't be add: {}", goal.toString(), e.getMessage());
         }
     }
 
@@ -42,14 +41,12 @@ public class GoalsDao {
         try {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("UPDATE " + tableName + " SET text =? where id=?");
-
             preparedStatement.setString(1, goal.getText());
             preparedStatement.setInt(2, goal.getId());
             preparedStatement.executeUpdate();
-            System.out.println("Goal has been updated");
-
+            logger.trace("Goal {} has been updated", goal.toString());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Goal: {} can't be updated: {}", goal.toString(), e.getMessage());
         }
     }
 
@@ -59,24 +56,27 @@ public class GoalsDao {
                     .prepareStatement("DELETE FROM " + tableName + " where id=?");
             preparedStatement.setInt(1, goal.getId());
             preparedStatement.executeUpdate();
+            logger.trace("Goal {} has been deleted", goal.toString());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Goal: {} can't be deleted: {}", goal.toString(), e.getMessage());
         }
         try {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("DELETE FROM " + tableName + " where parentgoal=?");
             preparedStatement.setInt(1, goal.getId());
             preparedStatement.executeUpdate();
+            logger.trace("For Goal {} child goals have been deleted", goal.toString());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For Goal: {} child goals can't be deleted: {}", goal.toString(), e.getMessage());
         }
         try {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("DELETE FROM " + "USERSTASK" + " where goal_id=?");
             preparedStatement.setInt(1, goal.getId());
             preparedStatement.executeUpdate();
+            logger.trace("For Goal {} child tasks have been deleted", goal.toString());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For Goal: {} child tasks can't be deleted: {}", goal.toString(), e.getMessage());
         }
     }
 
@@ -94,9 +94,8 @@ public class GoalsDao {
                 goals.add(goal);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For user id: {} can't get all goals: {}", user_id, e.getMessage());
         }
-
         return goals;
     }
     public List<Goal> getAllChildGoals(int user_id, int parent_id) {
@@ -115,9 +114,9 @@ public class GoalsDao {
                 goals.add(goal);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For user id: {} and goal id {} can't get all child goals: {}"
+                    , user_id, parent_id, e.getMessage());
         }
-
         return goals;
     }
 
@@ -133,7 +132,7 @@ public class GoalsDao {
                 goal.setParentGoal(rs.getInt("parentgoal"));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For goal id: {} can't find this goal: {}", goalId, e.getMessage());
         }
         return goal;
     }

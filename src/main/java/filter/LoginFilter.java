@@ -18,8 +18,7 @@ public class LoginFilter implements Filter {
             Arrays.asList("/logout", "/reg", "/register.jsp")));
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-
+    public void init(FilterConfig filterConfig) {
     }
 
     @Override

@@ -7,9 +7,6 @@ public class Task {
     private String description;
     private LocalDate timeToBeCompleted;
     private Status status;
-
-
-
     private int parentGoalId;
     private int id;
 
@@ -19,7 +16,6 @@ public class Task {
     }
 
     public Task() {
-
     }
     public int getParentGoalId() {
         return parentGoalId;

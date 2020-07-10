@@ -5,6 +5,8 @@ import dao.UsersTasksDao;
 import model.Goal;
 import model.Status;
 import model.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.PostgreSQLJDBC;
 
 import javax.servlet.RequestDispatcher;
@@ -26,6 +28,8 @@ public class UsersTasksServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private UsersTasksDao dao;
     private GoalsDao goalsDao;
+    private static final Logger logger = LoggerFactory.getLogger(
+            UsersTasksServlet.class);
 
     public UsersTasksServlet() {
         super();
@@ -33,14 +37,14 @@ public class UsersTasksServlet extends HttpServlet {
         goalsDao = new GoalsDao();
     }
 
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession();
         int user_id = (int) session.getAttribute("user_id");
-
         if (request.getParameter("tid") != null){
-            List<Status> listStatus = new ArrayList<Status>( Arrays.asList(Status.values() ));
+            List<Status> listStatus = new ArrayList<>( Arrays.asList(Status.values() ));
             request.setAttribute("listStatus", listStatus);
             RequestDispatcher requestDispatcher = request.getRequestDispatcher("updateTask.jsp");
             requestDispatcher.forward(request, response);
@@ -54,7 +58,7 @@ public class UsersTasksServlet extends HttpServlet {
         }else {
             response.setContentType("text/html");
             PrintWriter printWriter = response.getWriter();
-            List<Status> listStatus = new ArrayList<Status>( Arrays.asList(Status.values() ));
+            List<Status> listStatus = new ArrayList<>( Arrays.asList(Status.values() ));
             request.setAttribute("listStatus", listStatus);
             try{
                 int id = Integer.parseInt(request.getParameter("id"));
@@ -68,11 +72,10 @@ public class UsersTasksServlet extends HttpServlet {
             }
             printWriter.close();
         }
-
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         PostgreSQLJDBC.createUsersTasksTable();
         if (request.getParameter("tid") != null){
             doPut(request, response);
@@ -85,65 +88,63 @@ public class UsersTasksServlet extends HttpServlet {
                 LocalDate date = LocalDate.parse(request.getParameter("deadline"));
                 task.setTimeToBeCompleted(date);
             }catch (Exception e){
-                e.printStackTrace();
+                logger.info("New Task hasn't DeadLine");
             }
             try{
                 Status status = Status.valueOf(request.getParameter("status"));
                 task.setStatus(status);
             }catch (Exception e){
-                e.printStackTrace();
+                logger.debug("New Task hasn't Status, default NEW");
             }
             task.setParentGoalId(Integer.parseInt(request.getParameter("parentgoal")));
             int user_id = (int) session.getAttribute("user_id");
-
-            System.out.println(task.toString());
+            logger.debug("New Task: {}", task.toString());
             dao.addTask(task, user_id);
             response.sendRedirect("/goals");
         }
     }
 
     @Override
-    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = Integer.parseInt(request.getParameter("del"));
         Task task = dao.getTaskByIdP(id);
+        logger.debug("Task for deleting: {}", task.toString());
         dao.deleteTaskP(task);
         response.sendRedirect("/goals");
     }
 
     @Override
-    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        PostgreSQLJDBC.createNewTaskTable();
-        HttpSession session = request.getSession();
-        int id = Integer.parseInt((String) request.getParameter("tid"));
+    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int id = Integer.parseInt(request.getParameter("tid"));
         Task task = dao.getTaskByIdP(id);
         try{
             String text = request.getParameter("text");
             if (text != null)
                 task.setText(text);
         }catch (Exception e){
-            System.out.println("Text didn't find in params");
+            logger.info("Update Task with id [{}]: Text didn't find in params", id);
         }
         try{
             String description = request.getParameter("description");
             if (description != null)
                 task.setDescription(description);
         }catch (Exception e){
-            System.out.println("Description didn't find in params");
+            logger.info("Update Task with id [{}]: Description didn't find in params", id);
         }
         try{
             LocalDate date = LocalDate.parse(request.getParameter("deadline"));
             task.setTimeToBeCompleted(date);
 
         }catch (Exception e){
-            e.printStackTrace();
+            logger.info("Update Task with id [{}]: Deadline didn't find in params", id);
         }
         try{
             Status status = Status.valueOf(request.getParameter("status"));
             task.setStatus(status);
         }catch (Exception e){
-            e.printStackTrace();
+            logger.info("Update Task with id [{}]: State didn't find in params", id);
         }
-        System.out.println(task.toString());
+        logger.debug("Update Task with id [{}]: {}", id, task.toString());
         dao.updateTaskP(task);
         response.sendRedirect("/goals");
     }

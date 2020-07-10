@@ -8,12 +8,6 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 
 public class PasswordGenerator {
-    public static void main(String[] args) throws InvalidKeySpecException, NoSuchAlgorithmException {
-        String s = "qwerty";
-        System.out.println(generateStorngPasswordHash(s));
-        System.out.println(generateStorngPasswordHash(s));
-    }
-
     public static String generateStorngPasswordHash(String password) throws NoSuchAlgorithmException, InvalidKeySpecException
     {
         int iterations = 1000;
@@ -33,7 +27,7 @@ public class PasswordGenerator {
         return new byte[]{0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1};
     }
 
-    private static String toHex(byte[] array) throws NoSuchAlgorithmException
+    private static String toHex(byte[] array)
     {
         BigInteger bi = new BigInteger(1, array);
         String hex = bi.toString(16);

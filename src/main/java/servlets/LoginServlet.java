@@ -2,6 +2,8 @@ package servlets;
 
 import dao.UserDao;
 import model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.PasswordGenerator;
 
 import javax.servlet.ServletException;
@@ -16,7 +18,8 @@ import java.security.spec.InvalidKeySpecException;
 
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
-
+    private static final Logger logger = LoggerFactory.getLogger(
+            LoginServlet.class);
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         if (req.getParameter("out") != null){
@@ -27,7 +30,7 @@ public class LoginServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String userName = request.getParameter("login");
         String password = request.getParameter("password");
         HttpSession session = request.getSession();
@@ -35,6 +38,7 @@ public class LoginServlet extends HttpServlet {
         User user = userDao.getUserByName(userName);
         if (!userDao.haveUserWithName(userName)){
             System.out.println("No user with this name!");
+            logger.debug("Attempt to login not exist user with name: {}", userName);
             response.sendRedirect("/register.jsp");
         }
         else {
@@ -46,12 +50,13 @@ public class LoginServlet extends HttpServlet {
                     response.sendRedirect("/goals");
                 }else {
                     System.out.println("Wrong password!");
+                    logger.info("Attempt to login with wrong password userName: {}", userName);
                     response.sendRedirect("/login.jsp");
                 }
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (InvalidKeySpecException e) {
-                e.printStackTrace();
+            } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+                response.sendRedirect("/login.jsp");
+                logger.error("Can't to login user {}. Problems with PasswordGenerator: {}"
+                        , userName, e.getMessage());
             }
         }
     }

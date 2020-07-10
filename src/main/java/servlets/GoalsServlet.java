@@ -4,7 +4,8 @@ import dao.GoalsDao;
 import dao.UsersTasksDao;
 import model.Goal;
 import model.Task;
-import util.PostgreSQLJDBC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -22,6 +23,8 @@ public class GoalsServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private GoalsDao dao;
     private UsersTasksDao tasksDao;
+    private static final Logger logger = LoggerFactory.getLogger(
+            GoalsServlet.class);
 
     public GoalsServlet() {
         super();
@@ -31,9 +34,7 @@ public class GoalsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
         HttpSession session = request.getSession();
-        System.out.println("from get: " + request.getParameter("gid"));
         int user_id = (int) session.getAttribute("user_id");
         if (request.getParameter("guid") != null){
             RequestDispatcher requestDispatcher = request.getRequestDispatcher("updateGoal.jsp");
@@ -74,8 +75,6 @@ public class GoalsServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String guid = request.getParameter("guid");
-        System.out.println("from post: " + guid);
         if (request.getParameter("guid") != null){
             doPut(request, response);
         }else {
@@ -85,34 +84,30 @@ public class GoalsServlet extends HttpServlet {
             if (request.getParameter("parentgoal") != null)
             goal.setParentGoal(Integer.parseInt(request.getParameter("parentgoal")));
             int user_id = (int) session.getAttribute("user_id");
-            System.out.println(goal.toString());
+            logger.debug("Try to add new goal: {}", goal.toString());
             dao.addGoal(goal, user_id);
             doGet(request,response);
         }
     }
 
     @Override
-    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
         int id = Integer.parseInt(request.getParameter("del"));
         Goal goal = dao.getGoalByIdP(id);
+        logger.debug("Try to delete new goal: {}", goal.toString());
         dao.deleteGoal(goal);
         response.sendRedirect("/goals");
     }
 
     @Override
-    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        PostgreSQLJDBC.createNewTaskTable();
-        HttpSession session = request.getSession();
-        int id = Integer.parseInt((String) request.getParameter("guid"));
+    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int id = Integer.parseInt(request.getParameter("guid"));
         Goal goal = dao.getGoalByIdP(id);
-        try{
-            String text = request.getParameter("text");
-            if (text != null)
-                goal.setText(text);
-        }catch (Exception e){
-            System.out.println("Text didn't find in params");
-        }
-        System.out.println(goal.toString());
+        String text = request.getParameter("text");
+        if (text != null)
+            goal.setText(text);
+        else logger.info("Try to update goal: {}. Text didn't find in params", goal.toString());
+        logger.info("Try to update goal: {}.", goal.toString());
         dao.updateGoal(goal);
         response.sendRedirect("/goals");
     }

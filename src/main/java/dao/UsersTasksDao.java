@@ -2,16 +2,19 @@ package dao;
 
 import model.Status;
 import model.Task;
-import model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import servlets.RegServlet;
 import util.PostgreSQLJDBC;
 
-import javax.servlet.http.HttpSession;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class UsersTasksDao {
+    private static final Logger logger = LoggerFactory.getLogger(
+            UsersTasksDao.class);
     private Connection connection;
 
     public UsersTasksDao() {
@@ -24,11 +27,8 @@ public class UsersTasksDao {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("INSERT INTO USERSTASKS(user_id, goal_id, text, description, deadline, status) " +
                             "VALUES (?, ?, ?, ?, ?, ?)");
-            // Parameters start with 1
             preparedStatement.setInt(1, user_id);
-
             preparedStatement.setInt(2, task.getParentGoalId());
-
             preparedStatement.setString(3, task.getText());
             preparedStatement.setString(4, task.getDescription());
             if (task.getTimeToBeCompleted() == null){
@@ -41,12 +41,10 @@ public class UsersTasksDao {
             }else {
                 preparedStatement.setString(6, String.valueOf(task.getStatus()));
             }
-
             preparedStatement.executeUpdate();
-            System.out.println("Task has been added");
-
+            logger.trace("Task name: {} has been added", task.getText());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Task name: {} can't be added: {}", task.getText(), e.getMessage());
         }
     }
 
@@ -54,8 +52,6 @@ public class UsersTasksDao {
         try {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("UPDATE USERSTASKS SET text =?, description=?, deadline=?, status=? where id=?");
-            // Parameters start with 1
-
             preparedStatement.setString(1, task.getText());
             preparedStatement.setString(2, task.getDescription());
             if (task.getTimeToBeCompleted() == null){
@@ -68,15 +64,11 @@ public class UsersTasksDao {
             }else {
                 preparedStatement.setString(4, String.valueOf(task.getStatus()));
             }
-
-            //preparedStatement.setString(3, task.getTimeToBeCompleted().toString());
-            //preparedStatement.setString(4, String.valueOf(task.getStatus()));
             preparedStatement.setInt(5, task.getId());
             preparedStatement.executeUpdate();
-            System.out.println("Task has been updated");
-
+            logger.trace("Task name: {} has been updated", task.getText());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Task name: {} can't be updated: {}", task.getText(), e.getMessage());
         }
     }
 
@@ -84,14 +76,11 @@ public class UsersTasksDao {
         try {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("DELETE FROM USERSTASKS where id=?");
-            // Parameters start with 1
-
             preparedStatement.setInt(1, task.getId());
             preparedStatement.executeUpdate();
-            System.out.println("Task has been deleted");
-
+            logger.trace("Task name: {} has been deleted", task.getText());
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Task name: {} can't be deleted: {}", task.getText(), e.getMessage());
         }
     }
 
@@ -112,21 +101,17 @@ public class UsersTasksDao {
                 }catch (Exception e){
                     e.printStackTrace();
                 }
-
                 try{
                     Status status = Status.valueOf(rs.getString("status"));
                     task.setStatus(status);
-
                 }catch (Exception e){
                     e.printStackTrace();
                 }
-
                 tasks.add(task);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For user id: {} can't get all tasks: {}", user_id, e.getMessage());
         }
-
         return tasks;
     }
 
@@ -140,27 +125,22 @@ public class UsersTasksDao {
                 task.setId(rs.getInt("id"));
                 task.setText(rs.getString("text"));
                 task.setDescription(rs.getString("description"));
-                //task.setTimeToBeCompleted(LocalDate.parse(rs.getString("deadline")));
-                //task.setText(rs.getString("status"));
                 try{
                     LocalDate date = LocalDate.parse(rs.getString("deadline"));
                     task.setTimeToBeCompleted(date);
                 }catch (Exception e){
-                    e.printStackTrace();
+                    logger.trace("Task id: {} hasn't deadline", taskId);
                 }
-
                 try{
                     Status status = Status.valueOf(rs.getString("status"));
                     task.setStatus(status);
-
                 }catch (Exception e){
-                    e.printStackTrace();
+                    logger.trace("Task id: {} hasn't status", taskId);
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For task id: {} can't find this task: {}", taskId, e.getMessage());
         }
-
         return task;
     }
 
@@ -181,45 +161,21 @@ public class UsersTasksDao {
                     LocalDate date = LocalDate.parse(rs.getString("deadline"));
                     task.setTimeToBeCompleted(date);
                 }catch (Exception e){
-                    e.printStackTrace();
+                    logger.trace("Task id: {} hasn't deadline", task.getId());
                 }
-
                 try{
                     Status status = Status.valueOf(rs.getString("status"));
                     task.setStatus(status);
-
                 }catch (Exception e){
-                    e.printStackTrace();
+                    logger.trace("Task id: {} hasn't status", task.getId());
                 }
                 task.setParentGoalId(Integer.parseInt(rs.getString("goal_id")));
-
                 tasks.add(task);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("For goal id: {} can't find child tasks: {}", goalId, e.getMessage());
         }
-
         return tasks;
     }
 
-/*    public Task getTaskByText(String text) {
-        Task task = new Task();
-        try {
-            PreparedStatement preparedStatement = connection.
-                    prepareStatement("select * from userstasks where text=?");
-            preparedStatement.setString(1, text);
-            ResultSet rs = preparedStatement.executeQuery();
-
-            if (rs.next()) {
-                task.setUserId(rs.getInt("id"));
-                task.setName(rs.getString("name"));
-                task.setPassword(rs.getString("password"));
-                task.setEmail(rs.getString("email"));
-            }else return null;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return user;
-    }*/
 }
